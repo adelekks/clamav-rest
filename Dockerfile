@@ -38,8 +38,22 @@ RUN cd /go/src/clamav-rest && go mod init && go mod vendor && go build -v
 COPY entrypoint.sh /usr/bin/
 RUN mv /go/src/clamav-rest/clamav-rest /usr/bin/ && rm -Rf /go/src/clamav-rest
 
+# Install OpenSSH and set the password for root to "Docker!". In this example, "apk add" is the install instruction for an Alpine Linux-based image.
+RUN yum -y install openssh-server openssh-clients \
+     && echo "root:Docker!" | chpasswd
+
+# Copy the sshd_config file to the /etc/ssh/ directory
+COPY sshd_config /etc/ssh/
+
+# Copy and configure the ssh_setup file
+RUN mkdir -p /tmp
+COPY ssh_setup.sh /tmp
+RUN chmod +x /tmp/ssh_setup.sh \
+    && (sleep 1;/tmp/ssh_setup.sh 2>&1 > /dev/null)
+
+
 EXPOSE 9000
-EXPOSE 9443
+EXPOSE 2222
 
 ENV MAX_SCAN_SIZE=100M
 ENV MAX_FILE_SIZE=25M
